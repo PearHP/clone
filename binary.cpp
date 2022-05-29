@@ -1,8 +1,8 @@
 #include <iostream>
+#include <string>
 
 using namespace std;
 
-// Returns '0' for '1' and '1' for '0'
 char flip(char c){
     return (c == '0')? '1': '0';
 }
@@ -39,7 +39,7 @@ string convertDecToBin(int n){
     while (n > 0 && bin.size() <= 8){
         string s(1, ((n & 1)? '1' : '0'));
         bin.insert(0, s);
-        n >>= 1;
+        n >= 1;
     }
     int len = bin.size();
     for (int i = 0; i < 8 - len; i++){
@@ -50,13 +50,12 @@ string convertDecToBin(int n){
 }
 
 int convertBinToDec(string bin){
-    int n,digit,dec = 0,i = 0;
-    if (bin[0] == 1)
+    int n, digit, dec = 0, i = 0;
+    if (bin[0] & 1)
         return -1 * convertBinToDec(intoTwosComplement(bin));
     else{
-        n = stoic(bin);
-
-        while(n != 0){
+        n = stoi(bin);
+        while(n > 0){
             digit = n % 10;
             dec += digit << i;
             n = n / 10;
@@ -66,92 +65,98 @@ int convertBinToDec(string bin){
     } 
 }
 
-string addBitStrings(string first, string second){
-    string result;
-    int carry = 0; 
-
-    for (int i = 7 ; i >= 0 ; i--){
-        int firstBit = first.at(i) - '0';
-        int secondBit = second.at(i) - '0';
-        int sum = (firstBit ^ secondBit ^ carry) + '0';
-        result = (char)sum + result;
-        carry = (firstBit & secondBit) | (secondBit & carry) | (firstBit & carry);
-    }
-    if (carry)  
-        result += '1';
-
-    if (result[0] & 1)
-        return intoTwosComplement(result);
-    else
-        return result;
-}
 string add(string a, string b){
-   string result = "";
-   int temp = 0;
-   int size_a = a.size() - 1;
-   int size_b = b.size() - 1;
-   while (size_a >= 0 || size_b >= 0 || temp == 1){
-      temp += ((size_a >= 0)? a[size_a] - '0': 0);
-      temp += ((size_b >= 0)? b[size_b] - '0': 0);
-      result = char(temp % 2 + '0') + result;
-      temp /= 2;
-      size_a--; size_b--;
-   }
+    string result = ""; 
+    int s = 0;        
+    int i = a.size() - 1, j = b.size() - 1;
+    while (i >= 0 || j >= 0 || s == 1){
+        s += ((i >= 0)? a[i] - '0': 0);
+        s += ((j >= 0)? b[j] - '0': 0);
+        result = char(s % 2 + '0') + result;
+        s >>= 1;
+        i--;j--;
+    }
 
-   int n = result.size();
-   return result.substr(n - 8, 8);
+    int n = result.size();
+    return result.substr(n - 8, 8);
 }
 
-string subtractBitStrings(string first, string second){
-    string second_two_complement = intoTwosComplement(second);
-    return intoTwosComplement(add(first, second_two_complement));
+string subtract(string a, string b){
+    string b_into_two_complement = intoTwosComplement(b);
+    return add(a, b_into_two_complement);
 }
  
-int multiplySingleBit(string a, string b){
-    return (a[0] - '0') * (b[0] - '0');
+string MakeShifting(string str, int step){ //Left shift for binary string with N steps
+    string shifted = str;
+    for (int i = 0; i < step; i++)
+        shifted = shifted + '0';
+
+    int n = shifted.size();
+    return shifted.substr(n - 8, 8);
 }
- 
-long int multiply(string X, string Y){
-    int n = 7;
-    if (n == 0) return 0;
-    if (n == 1) return multiplySingleBit(X, Y);
-    
-    int fh = n/2;  
-    int sh = (n-fh);
-    string Xl = X.substr(0, fh);
-    string Xr = X.substr(fh, sh);
-    string Yl = Y.substr(0, fh);
-    string Yr = Y.substr(fh, sh);
- 
-    long int P1 = multiply(Xl, Yl);
-    long int P2 = multiply(Xr, Yr);
-    long int P3 = multiply(addBitStrings(Xl, Xr), addBitStrings(Yl, Yr));
- 
-    return P1*(1<<(2*sh)) + (P3 - P1 - P2)*(1<<sh) + P2;
+
+string multiply(string str1, string str2){
+    string allSum = "";
+    for (int j = 0 ; j < str2.length(); j++){
+            int secondDigit = str2[j] - '0';
+            if (secondDigit == 1){
+                string shifted = MakeShifting(str1,str2.size()-(j+1));
+                allSum = add(shifted, allSum);
+            }   
+        }
+    int n = allSum.size();
+    return allSum.substr(n - 8, 8);
+}
+
+string divide(string dividend, string divisor, string &remainder){
+    if (dividend[0] == '0'){
+        remainder = "00000000";
+    }
+    else{
+        remainder = "11111111";
+    }
+    for (int i = 0; i < 8; i++){
+        remainder = MakeShifting(remainder, 1);
+        remainder += dividend[0];
+        remainder = remainder.substr(1, 8);
+        dividend = MakeShifting(dividend, 1);
+        remainder = subtract(remainder, divisor);
+        if (remainder[0] == '1'){
+            dividend[7] = '0';
+            remainder = add(remainder, divisor);
+        }
+        else{
+            dividend[7] = '1';
+        }
+    }
+    return dividend;
 }
 
 int main(){
-    // int a, b, t;
-    // cout << "================================================";
-    // cout << "\nEnter value for number A: ";
-    // cin >> a;
-    // cout << "\nEnter value for number B: ";
-    // cin >> b;
-    string s1 = convertDecToBin(5);
-    string s2 = convertDecToBin(-33);
-    string temp1 = add(s1, s2);
-    cout << "\nThe answer of A + B = " << convertBinToDec(temp1);
+    int a, b;
+    cout << "\nInput A (Decimal): ";
+    cin >> a;
+    cout << "\nInput B (Decimal): ";
+    cin >> b;
+    string s1 = convertDecToBin(a);
+    string s2 = convertDecToBin(b);
+    cout << "\nA (Binary): " << s1;
+    cout << "\nB (Binary): " << s2;
 
-    string temp2 = subtractBitStrings(s1, s2);
-    cout << "\nThe answer of A - B = " << -1 * convertBinToDec(temp2);
-
-    // cout << "\nThe answer of A * B = "<< multiply(s1, s2);
-
-    // cout << convertDecToBin(-5);
-    // 11111011 //-5
-    // 00001010 //10
-
-    // 00000101
-
+    string ans1 = add(s1, s2);
+    cout << "\nA + B (Binary): " << ans1;
+    cout << "\nA + B (Decimal): " << convertBinToDec(ans1);
+    string ans2 = subtract(s1, s2);
+    cout << "\nA - B (Binary): " << ans2;
+    cout << "\nA - B (Decimal): " << convertBinToDec(ans2); 
+    string ans3 = multiply(s1, s2);
+    cout << "\nA * B (Binary): " << ans3; 
+    cout << "\nA * B (Decimal): " << convertBinToDec(ans3);
+    string s3;
+    string ans4 = divide(s1, s2, s3);
+    cout << "\nA / B (Binary): " << ans4; 
+    cout << "\nA / B (Decimal): " << convertBinToDec(ans4); 
+    cout << "\nA % B (Binary): " << s3;
+    cout << "\nA % B (Decimal): " << convertBinToDec(s3);
     return 0;
 }
